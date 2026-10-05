@@ -2,13 +2,13 @@ databases:
   - name: mf-tracker-db
     databaseName: mftracker
     user: mftracker
-    plan: 0.1c-256mb
+    plan: free
 
 services:
   - type: web
     name: mf-tracker
     runtime: docker
-    plan: 0.5c-512mb
+    plan: free
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
     envVars:
