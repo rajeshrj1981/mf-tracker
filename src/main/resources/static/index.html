@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My mutual funds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#13233A; --muted:#5E6B7C; --paper:#F3F5F8; --panel:#FFFFFF; --rule:#D9DFE7; --soft:#EAEFF5;
+  --gain:#15775A; --loss:#B42318; --accent:#1F4E8C; --warn:#8A5A00; --warnbg:#FFF3D6;
+}
+*{box-sizing:border-box}
+html{font-size:15px}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-variant-numeric:tabular-nums;line-height:1.45}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 60px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0;flex-wrap:wrap}
+header.top h1{font-size:1.05rem;font-weight:600;margin:0;letter-spacing:.1px}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{border:1px solid var(--rule);background:var(--panel);padding:7px 13px;border-radius:6px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.small{padding:3px 9px;font-size:.85rem}
+.btn.danger{color:var(--loss)}
+.btn[disabled]{opacity:.55;cursor:wait}
+.asof{color:var(--muted);font-size:.85rem}
+
+.hero{padding:22px 0 18px;border-bottom:1px solid var(--rule)}
+.hero .big{font-size:2.6rem;font-weight:600;line-height:1.1;letter-spacing:-.5px}
+.hero .big small{font-size:1.25rem;font-weight:500;margin-left:8px}
+.hero .sub{margin-top:8px;color:var(--muted)}
+.hero .sub b{color:var(--ink);font-weight:500}
+.pos{color:var(--gain)} .neg{color:var(--loss)}
+
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:18px 0 12px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:6px 14px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.tabs{display:flex;gap:18px}
+.tabs button{border:0;background:none;padding:6px 0;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ink);font-weight:500}
+.strategy-table tr.fund-changed td{background:#FFF3D6}
+.strategy-table tr.fund-changed td:first-child{box-shadow:inset 3px 0 #D99B18}
+.strategy-chart{max-height:620px;overflow:auto;padding:12px 16px}
+.strategy-chart svg{display:block;width:100%;min-width:880px;height:auto}
+.strategy-legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:.82rem}
+.strategy-legend span{display:inline-flex;align-items:center;gap:6px}
+.legend-swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
+
+.notice{background:var(--warnbg);color:var(--warn);border-radius:6px;padding:9px 13px;margin:0 0 12px;font-size:.92rem}
+.notice a{color:inherit;font-weight:500;cursor:pointer;text-decoration:underline}
+
+.group{background:var(--panel);border:1px solid var(--rule);border-radius:8px;margin-bottom:14px;overflow:hidden}
+.ghead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 16px;background:var(--soft);flex-wrap:wrap}
+.ghead h2{font-size:1rem;margin:0;font-weight:600}
+.gtitle{display:flex;align-items:center;gap:8px}
+.group-toggle{border:0;background:none;color:var(--muted);padding:2px 4px;cursor:pointer;font-size:1rem;line-height:1}
+.group-toggle:hover{color:var(--accent)}
+.ghead .gnums{display:flex;gap:22px;flex-wrap:wrap;font-size:.92rem}
+.gnums span{color:var(--muted)} .gnums b{color:var(--ink);font-weight:500}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:8px 12px;text-align:right;white-space:nowrap;border-top:1px solid var(--rule)}
+th{font-weight:500;color:var(--muted);font-size:.85rem;border-top:0}
+th.sortable{padding:0}
+th.sortable button{border:0;background:none;color:inherit;font:inherit;padding:8px 12px;cursor:pointer;white-space:nowrap}
+th.sortable button{text-align:inherit}
+th.sortable button:hover{color:var(--accent)}
+th.sortable button[aria-sort=ascending]::after{content:' ↑';color:var(--accent)}
+th.sortable button[aria-sort=descending]::after{content:' ↓';color:var(--accent)}
+th:first-child,td:first-child{text-align:left}
+td.name{white-space:normal;min-width:240px}
+tr.fund{cursor:pointer}
+tr.fund:hover td{background:#F8FAFC}
+tr.fund .caret{display:inline-block;width:14px;color:var(--muted);transition:transform .15s}
+tr.fund.open .caret{transform:rotate(90deg)}
+.meta{display:block;color:var(--muted);font-size:.8rem;margin-left:14px}
+.tag{display:inline-block;font-size:.75rem;padding:0 6px;border-radius:4px;background:var(--soft);color:var(--muted);margin-left:6px}
+.tag.stale{background:var(--warnbg);color:var(--warn)}
+tr.buys>td{padding:0;background:#FAFBFD}
+tr.buys table{font-size:.86rem}
+tr.buys th,tr.buys td{padding:6px 12px}
+tr.buys td:first-child,tr.buys th:first-child{padding-left:40px}
+.remark{color:var(--warn);font-size:.8rem;white-space:normal;max-width:260px;display:block;text-align:left}
+.empty{padding:40px 10px;text-align:center;color:var(--muted)}
+.login-screen{min-height:100vh;display:grid;place-items:center;padding:20px;background:var(--paper)}
+.login-screen[hidden]{display:none}
+.login-card{width:min(380px,100%);padding:24px;background:#fff;border:1px solid var(--rule);border-radius:10px}
+.login-card h2{margin:0 0 8px}.login-card p{color:var(--muted);margin:0 0 18px}
+.cas-preview{max-height:45vh;overflow:auto;border:1px solid var(--rule);border-radius:6px;margin:12px 0}
+.cas-preview table{font-size:.82rem}.cas-preview td,.cas-preview th{padding:6px 8px}
+
+dialog{border:1px solid var(--rule);border-radius:10px;padding:0;width:min(520px,94vw);color:var(--ink)}
+dialog::backdrop{background:rgba(19,35,58,.45)}
+dialog form{padding:20px}
+dialog h3{margin:0 0 14px;font-size:1.05rem}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:.85rem;color:var(--muted)}
+.field input,.field select,.field textarea{padding:8px 10px;border:1px solid var(--rule);border-radius:6px;background:#fff;width:100%}
+.field textarea{resize:vertical;min-height:110px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px}
+.hint{font-size:.82rem;color:var(--muted);margin:-6px 0 12px}
+.dialog-status{background:#EAF2FF;border:1px solid #A8C5EA;color:#13233A;border-radius:6px;padding:9px 11px;margin:0 0 12px;font-size:.88rem;line-height:1.4}
+.results{border:1px solid var(--rule);border-radius:6px;max-height:190px;overflow:auto;margin-bottom:12px}
+.results button{display:block;width:100%;text-align:left;border:0;border-top:1px solid var(--rule);background:#fff;padding:7px 10px;cursor:pointer;font-size:.88rem}
+.results button:first-child{border-top:0}
+.results button:hover{background:var(--soft)}
+.results small{color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:20}
+#toast.show{opacity:1}
+@media (max-width:640px){.hero .big{font-size:2rem}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<section id="loginScreen" class="login-screen" hidden>
+  <form id="loginForm" class="login-card">
+    <h2>Sign in</h2><p>Log in to view your mutual fund records.</p>
+    <div id="loginError" class="dialog-status" hidden></div>
+    <div class="field"><label for="loginUsername">Username</label><input id="loginUsername" autocomplete="username" required></div>
+    <div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+    <button class="btn primary" style="width:100%" type="submit">Log in</button>
+    <div class="hint" style="margin:12px 0 0">Temporary accounts: rajesh / rajesh and cams / cams</div>
+  </form>
+</section>
+<div class="wrap" id="appRoot" hidden>
+  <header class="top">
+    <h1>My mutual funds</h1>
+    <div class="actions">
+      <span class="asof" id="asof"></span>
+      <span class="asof" id="signedInAs"></span>
+      <button class="btn" id="refreshBtn">Refresh NAV</button>
+      <button class="btn" id="casBtn">Import CAS</button>
+      <button class="btn primary" id="addBtn">Add purchase</button>
+      <button class="btn danger" id="clearDataBtn" title="Delete all investment records for both accounts">Clear all data</button>
+      <button class="btn" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <section class="hero" id="hero"></section>
+
+  <div class="bar">
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-portfolio" aria-selected="true">Portfolio</button>
+      <button role="tab" id="tab-funds" aria-selected="false">Funds &amp; scheme codes</button>
+      <button role="tab" id="tab-advisor" aria-selected="false">Daily pick</button>
+      <button role="tab" id="tab-strategy" aria-selected="false">50-day strategy</button>
+    </div>
+    <div class="seg" id="groupSeg" aria-label="Group by">
+      <button data-g="fundHouse" aria-pressed="true">Fund house</button>
+      <button data-g="category" aria-pressed="false">Category</button>
+      <button data-g="none" aria-pressed="false">No grouping</button>
+    </div>
+  </div>
+
+  <div id="notice"></div>
+  <main id="main"></main>
+</div>
+
+<!-- Purchase dialog -->
+<dialog id="purchaseDlg">
+  <form method="dialog" id="purchaseForm" novalidate>
+    <h3 id="purchaseTitle">Add purchase</h3>
+    <div id="purchaseStatus" class="dialog-status" role="status" aria-live="polite" hidden></div>
+    <div class="field"><label for="pEmail">Paste purchase confirmation email</label><textarea id="pEmail" rows="5" placeholder="Paste the email content here"></textarea></div>
+    <div class="hint">When Gemini is configured, it extracts the details; otherwise a local parser is used. Pasted email text is sent to Google only when Gemini is configured.</div>
+    <div class="dlg-actions" style="justify-content:flex-start;margin:-4px 0 14px"><button type="button" class="btn small" id="parsePurchaseEmail">Parse email</button></div>
+    <div class="field"><label for="pFund">Fund</label><select id="pFund" required></select></div>
+    <div class="hint"><a href="#" id="newFundLink">Fund not in the list? Add a new fund</a></div>
+    <div class="row2">
+      <div class="field"><label for="pDate">Purchase date</label><input type="date" id="pDate" required></div>
+      <div class="field"><label for="pAmount">Amount invested (₹)</label><input type="number" id="pAmount" min="0" step="0.01" required></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="pNav">NAV at purchase</label><input type="number" id="pNav" min="0" step="0.0001"></div>
+      <div class="field"><label for="pUnits">Units allotted</label><input type="number" id="pUnits" min="0" step="0.001"></div>
+    </div>
+    <div class="hint">Enter the NAV or the units from your contract note and the other is worked out. <a href="#" id="fetchNav">Look up NAV for this date</a></div>
+    <div class="field"><label for="pBroker">Bought through</label><input id="pBroker" list="brokers" placeholder="Direct, ICICI…"><datalist id="brokers"><option>Direct</option><option>ICICI</option></datalist></div>
+    <div class="dlg-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" id="pSave" type="submit">Save purchase</button></div>
+  </form>
+</dialog>
+
+<dialog id="casDlg">
+  <form method="dialog" id="casForm" novalidate>
+    <h3>Bulk import from CAS</h3>
+    <div id="casStatus" class="dialog-status" role="status" aria-live="polite" hidden></div>
+    <p class="hint" style="margin:0 0 12px">Upload a detailed CAMS CAS PDF. It is decrypted and parsed locally using its transaction table layout; the PDF and password are not sent to Gemini or retained.</p>
+    <div class="field"><label for="casFile">CAS PDF</label><input id="casFile" type="file" accept="application/pdf,.pdf" required></div>
+    <div class="field"><label for="casPassword">PDF password</label><input id="casPassword" type="password" autocomplete="off"></div>
+    <button type="button" class="btn" id="parseCasBtn">Read and preview transactions</button>
+    <div id="casPreview" class="cas-preview" hidden></div>
+    <div class="dlg-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" id="importCasBtn" type="button" disabled>Import selected rows</button></div>
+  </form>
+</dialog>
+
+<!-- Fund dialog -->
+<dialog id="fundDlg">
+  <form method="dialog" id="fundForm" novalidate>
+    <h3 id="fundTitle">Fund</h3>
+    <div id="fundStatus" class="dialog-status" role="status" aria-live="polite" hidden></div>
+    <div class="field"><label for="fName">Scheme name</label><input id="fName" required></div>
+    <div class="row2">
+      <div class="field"><label for="fHouse">Fund house</label><input id="fHouse" list="houses"><datalist id="houses"></datalist></div>
+      <div class="field"><label for="fCat">Category</label><input id="fCat" list="cats"><datalist id="cats"></datalist></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label for="fPlan">Plan</label>
+        <select id="fPlan"><option value="DIRECT">Direct</option><option value="REGULAR">Regular</option><option value="UNKNOWN">Not sure</option></select></div>
+      <div class="field"><label for="fCode">AMFI scheme code</label><input id="fCode" inputmode="numeric" placeholder="e.g. 118989"></div>
+    </div>
+    <div class="field"><label for="fSearch">Find the scheme code</label><input id="fSearch" placeholder="Type part of the scheme name, e.g. nippon large cap direct"></div>
+    <div class="results" id="fResults" hidden></div>
+    <div class="dlg-actions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Save fund</button></div>
+  </form>
+</dialog>
+<div id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const inr0 = new Intl.NumberFormat('en-IN', {maximumFractionDigits: 0});
+const num = (n, d) => n == null ? '–' : new Intl.NumberFormat('en-IN', {minimumFractionDigits: d, maximumFractionDigits: d}).format(n);
+const rs = n => n == null ? '–' : '₹' + inr0.format(Math.round(n));
+const signed = n => n == null ? '–' : (n > 0 ? '+' : n < 0 ? '−' : '') + '₹' + inr0.format(Math.abs(Math.round(n)));
+const pct = n => n == null ? '' : (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(2) + '%';
+const cls = n => n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+const dmy = d => { if (!d) return '–'; const [y, m, dd] = d.split('-'); return `${dd}-${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m-1]}-${y}`; };
+
+let state = {groupBy: 'fundHouse', view: 'portfolio', open: new Set(), data: null, funds: [], advisorSort: {key: null, direction: 'ascending'}, portfolioSort: {}, portfolioCollapsed: new Set(), portfolioKnownGroups: new Set(), portfolioCollapseGroupBy: null, strategyHistory: [], strategySummary: null};
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api' + path, {credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, ...opts});
+  if (res.status === 204) return null;
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || body.message || ('Request failed (' + res.status + ')'));
+  return body;
+}
+let toastTimer, dialogToastTimer;
+function toast(msg) {
+  const dialog = document.querySelector('dialog[open]');
+  const status = dialog && dialog.querySelector('.dialog-status');
+  if (status) {
+    status.textContent = msg; status.hidden = false;
+    clearTimeout(dialogToastTimer);
+    dialogToastTimer = setTimeout(() => { status.hidden = true; }, 8000);
+    return;
+  }
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+}
+
+// ------------------------------------------------------------ portfolio view
+async function loadPortfolio() {
+  state.data = await api('/portfolio?groupBy=' + state.groupBy);
+  renderHero(); renderNotice();
+  if (state.view === 'portfolio') renderPortfolio();
+  else if (state.view === 'strategy') loadStrategy();
+}
+function renderHero() {
+  const t = state.data.totals;
+  $('#hero').innerHTML = `
+    <div class="big ${cls(t.gain)}">${signed(t.gain)}<small>${pct(t.gainPct)}</small></div>
+    <div class="sub">Invested <b>${rs(t.invested)}</b> &nbsp;·&nbsp; Worth now <b>${rs(t.currentValue)}</b> &nbsp;·&nbsp; ${t.funds} funds, ${t.purchases} purchases</div>`;
+  const r = state.data.navRefreshedAt;
+  $('#asof').textContent = r ? 'NAVs refreshed ' + new Date(r).toLocaleString('en-IN', {day:'numeric', month:'short', hour:'numeric', minute:'2-digit'}) : 'NAVs not refreshed yet';
+}
+function renderNotice() {
+  const d = state.data, parts = [];
+  if (d.unmappedFunds) parts.push(`${d.unmappedFunds} fund${d.unmappedFunds > 1 ? 's have' : ' has'} no AMFI scheme code, so the NAV from your spreadsheet is used. <a data-goto="funds">Link them</a>`);
+  else if (d.staleFunds) parts.push(`${d.staleFunds} fund${d.staleFunds > 1 ? 's are' : ' is'} showing an old NAV. Try Refresh NAV.`);
+  $('#notice').innerHTML = parts.map(p => `<div class="notice">${p}</div>`).join('');
+}
+function renderPortfolio() {
+  const d = state.data;
+  if (!d.groups.length) { $('#main').innerHTML = '<div class="empty">No funds yet. Use “Add purchase” to record your first investment.</div>'; return; }
+  if (state.portfolioCollapseGroupBy !== state.groupBy) {
+    state.portfolioCollapsed.clear(); state.portfolioKnownGroups.clear();
+    state.portfolioCollapseGroupBy = state.groupBy;
+  }
+  d.groups.forEach(g => {
+    if (!state.portfolioKnownGroups.has(g.name)) {
+      state.portfolioCollapsed.add(g.name);
+      state.portfolioKnownGroups.add(g.name);
+    }
+  });
+  $('#main').innerHTML = d.groups.map(g => `
+    <section class="group">
+      <div class="ghead">
+        <div class="gtitle"><button class="group-toggle" type="button" data-collapse-group="${esc(g.name)}" aria-expanded="${!state.portfolioCollapsed.has(g.name)}" aria-label="${state.portfolioCollapsed.has(g.name) ? 'Expand ' : 'Collapse '}${esc(g.name)}">${state.portfolioCollapsed.has(g.name) ? '▸' : '▾'}</button><h2>${esc(g.name)}</h2></div>
+        <div class="gnums">
+          <span>Invested <b>${rs(g.totals.invested)}</b></span>
+          <span>Value <b>${rs(g.totals.currentValue)}</b></span>
+          <span>Gain/loss <b class="${cls(g.totals.gain)}">${signed(g.totals.gain)} ${pct(g.totals.gainPct)}</b></span>
+        </div>
+      </div>
+      ${state.portfolioCollapsed.has(g.name) ? '' : `<div class="scroll"><table>
+        <thead><tr>${portfolioSortHeader(g.name, 'schemeName', 'Fund')}${portfolioSortHeader(g.name, 'units', 'Units')}${portfolioSortHeader(g.name, 'avgNav', 'Avg NAV')}${portfolioSortHeader(g.name, 'latestNav', 'Latest NAV')}${portfolioSortHeader(g.name, 'invested', 'Invested')}${portfolioSortHeader(g.name, 'currentValue', 'Value')}${portfolioSortHeader(g.name, 'gain', 'Gain/loss')}${portfolioSortHeader(g.name, 'gainPct', 'Gain/loss %')}</tr></thead>
+        <tbody>${sortedGroupFunds(g).map(fundRows).join('')}</tbody>
+      </table></div>`}
+    </section>`).join('');
+}
+function portfolioSortHeader(groupName, key, label) {
+  const sort = state.portfolioSort[groupName];
+  const direction = sort && sort.key === key ? sort.direction : 'none';
+  return `<th class="sortable"><button type="button" data-portfolio-sort="${key}" data-sort-group="${esc(groupName)}" aria-sort="${direction}">${label}</button></th>`;
+}
+function sortedGroupFunds(group) {
+  const sort = state.portfolioSort[group.name];
+  if (!sort) return group.funds;
+  const multiplier = sort.direction === 'ascending' ? 1 : -1;
+  return [...group.funds].sort((left, right) => {
+    const a = left[sort.key], b = right[sort.key];
+    if (a == null || b == null) return a == null ? (b == null ? 0 : 1) : -1;
+    const order = typeof a === 'string' ? a.localeCompare(b, undefined, {sensitivity:'base'}) : a - b;
+    return order === 0 ? left.id - right.id : order * multiplier;
+  });
+}
+function fundRows(f) {
+  const open = state.open.has(f.id);
+  const sub = state.groupBy === 'fundHouse' ? f.category : state.groupBy === 'category' ? f.fundHouse : `${f.fundHouse || ''} · ${f.category || ''}`;
+  let h = `<tr class="fund ${open ? 'open' : ''}" data-fund="${f.id}">
+    <td class="name"><span class="caret">▸</span>${esc(f.schemeName)}<span class="tag">${esc(f.plan.toLowerCase())}</span>
+      <span class="meta">${esc(sub)}</span></td>
+    <td>${num(f.units, 3)}</td><td>${num(f.avgNav, 2)}</td>
+    <td>${num(f.latestNav, 2)}<span class="meta" style="margin:0;text-align:right">${dmy(f.navDate)}${f.navStale ? '<span class="tag stale">old</span>' : ''}
+      <button class="btn small" data-refresh-f="${f.id}" title="Refresh NAV for this fund" aria-label="Refresh NAV for ${esc(f.schemeName)}">↻</button></span></td>
+    <td>${rs(f.invested)}</td><td>${rs(f.currentValue)}</td>
+    <td class="${cls(f.gain)}">${signed(f.gain)}</td><td class="${cls(f.gainPct)}">${pct(f.gainPct)}</td></tr>`;
+  if (open) h += `<tr class="buys"><td colspan="8"><div class="scroll"><table>
+      <thead><tr><th>Date</th><th>Amount</th><th>NAV</th><th>Units</th><th>Value now</th><th>Gain/loss</th><th></th></tr></thead><tbody>
+      ${f.purchases.map(p => `<tr><td>${dmy(p.date)}${p.broker ? `<span class="tag">${esc(p.broker)}</span>` : ''}${p.remark ? `<span class="remark">${esc(p.remark)}</span>` : ''}</td>
+        <td>${rs(p.amount)}</td><td>${num(p.nav, 4)}</td><td>${num(p.units, 3)}</td><td>${rs(p.currentValue)}</td>
+        <td class="${cls(p.gain)}">${signed(p.gain)} <small>${pct(p.gainPct)}</small></td>
+        <td><button class="btn small" data-edit-p="${p.id}" data-fund="${f.id}">Edit</button> <button class="btn small danger" data-del-p="${p.id}">Delete</button></td></tr>`).join('')}
+      </tbody></table></div><div style="padding:8px 12px 12px 40px"><button class="btn small" data-add-for="${f.id}">Add purchase to this fund</button></div></td></tr>`;
+  return h;
+}
+
+// ------------------------------------------------------------ funds view
+async function loadFunds() {
+  state.funds = await api('/funds');
+  if (state.view === 'funds') renderFunds();
+}
+function renderFunds() {
+  const unmapped = state.funds.filter(f => !f.amfiCode).length;
+  $('#main').innerHTML = `
+    <div class="group"><div class="ghead"><h2>Funds &amp; scheme codes</h2>
+      <div class="gnums"><span>${state.funds.length} funds · <b>${unmapped}</b> without a scheme code</span><button class="btn small" id="newFundBtn">Add fund</button></div></div>
+    <div class="scroll"><table><thead><tr><th>Fund</th><th>Plan</th><th>Linked AMFI scheme</th><th>NAV</th><th></th></tr></thead><tbody>
+    ${state.funds.map(f => `<tr><td class="name">${esc(f.schemeName)}<span class="meta">${esc(f.fundHouse || '')} · ${esc(f.category || '')}</span></td>
+      <td>${esc(f.plan.toLowerCase())}</td>
+      <td class="name" style="text-align:left">${f.amfiCode ? `${esc(f.amfiSchemeName || '')}<span class="meta">code ${esc(f.amfiCode)} · ${f.mappingStatus === 'AUTO' ? 'matched automatically, please verify' : 'confirmed'}</span>` : '<span class="neg">Not linked</span>'}</td>
+      <td>${num(f.latestNav, 2)}<span class="meta" style="margin:0;text-align:right">${dmy(f.navDate)} · ${esc((f.navSource || '').toLowerCase())}</span></td>
+      <td><button class="btn small" data-refresh-f="${f.id}">Refresh NAV</button> <button class="btn small" data-edit-f="${f.id}">${f.amfiCode ? 'Edit' : 'Link'}</button></td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+// ------------------------------------------------------------ purchase dialog
+let editingPurchase = null, lastEdited = 'nav';
+async function ensureFunds() { if (!state.funds.length) state.funds = await api('/funds'); }
+function fillFundSelect(selected) {
+  const byHouse = {};
+  state.funds.forEach(f => (byHouse[f.fundHouse || 'Other'] ||= []).push(f));
+  $('#pFund').innerHTML = Object.keys(byHouse).sort().map(h => `<optgroup label="${esc(h)}">${byHouse[h].map(f =>
+    `<option value="${f.id}" ${f.id == selected ? 'selected' : ''}>${esc(f.schemeName)} (${esc(f.plan.toLowerCase())})</option>`).join('')}</optgroup>`).join('');
+}
+async function openPurchase(fundId, purchase, defaults) {
+  await ensureFunds();
+  editingPurchase = purchase || null;
+  $('#purchaseTitle').textContent = purchase ? 'Edit purchase' : 'Add purchase';
+  $('#pEmail').value = '';
+  fillFundSelect(fundId);
+  $('#pDate').value = purchase ? purchase.date : new Date().toISOString().slice(0, 10);
+  $('#pDate').max = new Date().toISOString().slice(0, 10);
+  $('#pAmount').value = purchase ? purchase.amount : (defaults && defaults.amount != null ? defaults.amount : '');
+  $('#pNav').value = purchase ? purchase.nav : '';
+  $('#pUnits').value = purchase ? purchase.units : '';
+  $('#pBroker').value = purchase ? (purchase.broker || '') : '';
+  lastEdited = 'nav';
+  $('#purchaseDlg').showModal();
+}
+function matchPurchaseFund(scheme) {
+  const noise = new Set(['fund', 'of', 'the', 'plan', 'option', 'growth', 'scheme', 'mutual']);
+  const tokens = value => new Set(String(value || '').toLowerCase().match(/[a-z0-9]+/g)?.filter(t => !noise.has(t)) || []);
+  const wanted = tokens(scheme);
+  if (!wanted.size) return null;
+  const requestedPlan = /\bdirect\b/i.test(scheme) ? 'DIRECT' : /\bregular\b/i.test(scheme) ? 'REGULAR' : null;
+  const ranked = state.funds.map(f => {
+    const candidate = tokens(`${f.schemeName} ${f.amfiSchemeName || ''} ${f.plan}`);
+    const overlap = [...wanted].filter(t => candidate.has(t)).length;
+    let score = overlap / wanted.size;
+    if (requestedPlan) score += f.plan === requestedPlan ? 0.2 : -0.2;
+    return {fund: f, score};
+  }).sort((a, b) => b.score - a.score);
+  if (!ranked.length || ranked[0].score < 0.6 || (ranked[1] && ranked[0].score - ranked[1].score < 0.05)) return null;
+  return ranked[0].fund;
+}
+$('#parsePurchaseEmail').addEventListener('click', async () => {
+  const text = $('#pEmail').value;
+  if (!text.trim()) return toast('Paste the purchase confirmation email first.');
+  let parsed;
+  try { parsed = await api('/purchases/parse-email', {method: 'POST', body: JSON.stringify({email: text})}); }
+  catch (err) { return toast(err.message); }
+  if (!parsed.purchase) return toast('This email does not appear to confirm a purchase.');
+  const fund = parsed.schemeName ? matchPurchaseFund(parsed.schemeName) : null;
+  const filled = [];
+  if (fund) { $('#pFund').value = fund.id; filled.push('fund'); }
+  if (parsed.date) { $('#pDate').value = parsed.date; filled.push('date'); }
+  if (parsed.amount != null && parsed.amount > 0) { $('#pAmount').value = Number(parsed.amount).toFixed(2); filled.push('amount'); }
+  if (parsed.broker) { $('#pBroker').value = parsed.broker; filled.push('broker'); }
+  if (parsed.nav != null && parsed.nav > 0) { $('#pNav').value = parsed.nav; recalc('nav'); filled.push('NAV'); }
+  else if (parsed.units != null && parsed.units > 0) { $('#pUnits').value = parsed.units; recalc('units'); filled.push('units'); }
+  if (!filled.length) return toast('Could not find purchase details. Check the email format and enter them manually.');
+  let navLookupNote = '';
+  if (!parsed.nav && !parsed.units && fund && parsed.date && parsed.amount > 0) {
+    try {
+      const result = await api(`/funds/${fund.id}/nav?date=${parsed.date}`);
+      $('#pNav').value = result.nav; recalc('nav');
+      filled.push('NAV lookup'); navLookupNote = ` NAV lookup (${dmy(result.date)}) is an estimate; verify it against your contract note.`;
+    } catch (err) {
+      navLookupNote = ' Could not look up NAV; enter NAV or units from your contract note.';
+    }
+  }
+  const missing = [!fund && parsed.schemeName ? 'select the fund' : null, !parsed.date ? 'check the date' : null,
+    !(parsed.amount > 0) ? 'check the amount' : null].filter(Boolean);
+  toast(`${parsed.message} Filled ${filled.join(', ')}.${missing.length ? ' Please ' + missing.join(' and ') + '.' : ' Review the fields before saving.'}${navLookupNote}`);
+});
+function recalc(from) {
+  if (from) lastEdited = from;
+  const a = parseFloat($('#pAmount').value), n = parseFloat($('#pNav').value), u = parseFloat($('#pUnits').value);
+  if (!(a > 0)) return;
+  if (lastEdited === 'nav' && n > 0) $('#pUnits').value = (a / n).toFixed(3);
+  else if (lastEdited === 'units' && u > 0) $('#pNav').value = (a / u).toFixed(4);
+}
+$('#pAmount').addEventListener('input', () => recalc());
+$('#pNav').addEventListener('input', () => recalc('nav'));
+$('#pUnits').addEventListener('input', () => recalc('units'));
+$('#fetchNav').addEventListener('click', async e => {
+  e.preventDefault();
+  try {
+    const r = await api(`/funds/${$('#pFund').value}/nav?date=${$('#pDate').value}`);
+    $('#pNav').value = r.nav; recalc('nav'); toast(`NAV ${r.nav} as on ${dmy(r.date)}. Check it against your contract note.`);
+  } catch (err) { toast(err.message); }
+});
+$('#newFundLink').addEventListener('click', e => { e.preventDefault(); $('#purchaseDlg').close(); openFund(null, true); });
+$('#purchaseForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {fundId: +$('#pFund').value, date: $('#pDate').value, amount: parseFloat($('#pAmount').value),
+    nav: parseFloat($('#pNav').value) || null, units: parseFloat($('#pUnits').value) || null, broker: $('#pBroker').value};
+  if (!body.fundId || !body.date || !(body.amount > 0)) return toast('Pick a fund, a date and an amount.');
+  if (!body.nav && !body.units) return toast('Enter the NAV or the units allotted.');
+  try {
+    await api(editingPurchase ? '/purchases/' + editingPurchase.id : '/purchases', {method: editingPurchase ? 'PUT' : 'POST', body: JSON.stringify(body)});
+    $('#purchaseDlg').close(); state.open.add(body.fundId);
+    toast(editingPurchase ? 'Purchase updated.' : 'Purchase added.');
+    await Promise.all([loadPortfolio(), loadFunds()]);
+  } catch (err) { toast(err.message); }
+});
+
+// ------------------------------------------------------------ fund dialog
+let editingFund = null, returnToPurchase = false, searchTimer;
+async function openFund(id, fromPurchase) {
+  editingFund = id ? state.funds.find(f => f.id === id) : null; returnToPurchase = !!fromPurchase;
+  const meta = await api('/meta');
+  $('#houses').innerHTML = meta.fundHouses.map(h => `<option>${esc(h)}</option>`).join('');
+  $('#cats').innerHTML = meta.categories.map(h => `<option>${esc(h)}</option>`).join('');
+  const f = editingFund;
+  $('#fundTitle').textContent = f ? 'Edit fund' : 'Add fund';
+  $('#fName').value = f ? f.schemeName : ''; $('#fHouse').value = f ? (f.fundHouse || '') : ''; $('#fCat').value = f ? (f.category || '') : '';
+  $('#fPlan').value = f ? f.plan : 'DIRECT'; $('#fCode').value = f ? (f.amfiCode || '') : ''; $('#fSearch').value = '';
+  $('#fResults').hidden = true;
+  $('#fundDlg').showModal();
+  if (f && !f.amfiCode) showResults(await api(`/funds/${f.id}/suggestions`).catch(() => []), 'Possible matches for this fund');
+}
+function showResults(list, title) {
+  const box = $('#fResults');
+  box.hidden = false;
+  box.innerHTML = list.length ? list.map(s => `<button type="button" data-code="${esc(s.code)}">${esc(s.name)}<br><small>code ${esc(s.code)} · NAV ${num(s.nav, 4)} (${dmy(s.date)})</small></button>`).join('')
+    : '<div class="hint" style="padding:8px 10px;margin:0">No matches. Try fewer words.</div>';
+}
+$('#fSearch').addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  const q = $('#fSearch').value.trim();
+  if (q.length < 3) { $('#fResults').hidden = true; return; }
+  searchTimer = setTimeout(async () => {
+    try { showResults(await api('/schemes/search?q=' + encodeURIComponent(q))); } catch (err) { toast(err.message); }
+  }, 300);
+});
+$('#fResults').addEventListener('click', e => {
+  const b = e.target.closest('[data-code]'); if (!b) return;
+  $('#fCode').value = b.dataset.code;
+  const n = b.firstChild.textContent;
+  if (!$('#fName').value) $('#fName').value = n;
+  if (/direct/i.test(n)) $('#fPlan').value = 'DIRECT'; else $('#fPlan').value = 'REGULAR';
+  $('#fResults').hidden = true; toast('Scheme code ' + b.dataset.code + ' selected. Save to apply.');
+});
+$('#fundForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = {schemeName: $('#fName').value, fundHouse: $('#fHouse').value, category: $('#fCat').value, plan: $('#fPlan').value, amfiCode: $('#fCode').value};
+  if (!body.schemeName.trim()) return toast('Enter the scheme name.');
+  try {
+    const saved = await api(editingFund ? '/funds/' + editingFund.id : '/funds', {method: editingFund ? 'PUT' : 'POST', body: JSON.stringify(body)});
+    $('#fundDlg').close(); toast('Fund saved.');
+    await Promise.all([loadPortfolio(), loadFunds()]);
+    if (returnToPurchase) openPurchase(saved.id);
+  } catch (err) { toast(err.message); }
+});
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+
+// ------------------------------------------------------------ daily pick view
+async function loadAdvisor(force) {
+  $('#main').innerHTML = '<div class="empty">Comparing the last week’s NAVs across your funds… this can take up to a minute the first time each day.</div>';
+  try {
+    state.advisor = force ? await api('/advisor/today/refresh', {method: 'POST'}) : await api('/advisor/today');
+    state.advisorHistory = await api('/advisor/history');
+    if (state.view === 'advisor') renderAdvisor();
+  } catch (err) {
+    if (state.view === 'advisor') $('#main').innerHTML = `<div class="empty">Couldn’t build today’s pick: ${esc(err.message)}</div>`;
+  }
+}
+function renderAdvisor() {
+  const a = state.advisor, p = a.pick, hist = state.advisorHistory || [];
+  const compared = a.ranking.filter(r => !r.note).length;
+  const sortKeys = {fund: 'schemeName', week: 'oneWeekPct', month: 'oneMonthPct', days: 'upDays', share: 'weightPct'};
+  const ranking = [...a.ranking];
+  if (state.advisorSort.key) {
+    const {key, direction} = state.advisorSort, multiplier = direction === 'ascending' ? 1 : -1;
+    ranking.sort((left, right) => {
+      const x = left[sortKeys[key]], y = right[sortKeys[key]];
+      if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1;
+      return (typeof x === 'string' ? x.localeCompare(y, undefined, {sensitivity: 'base'}) : x - y) * multiplier;
+    });
+  }
+  const sortHeader = (key, label) => `<th class="sortable"><button type="button" data-advisor-sort="${key}" aria-sort="${state.advisorSort.key === key ? state.advisorSort.direction : 'none'}">${label}</button></th>`;
+  const head = p ? `
+      <div style="font-size:1.5rem;font-weight:600;line-height:1.25">${esc(p.schemeName)}</div>
+      <div class="sub" style="margin-top:6px;color:var(--muted)">${esc(p.fundHouse || '')} · ${esc(p.category || '')} · ${esc(p.plan.toLowerCase())} plan</div>
+      <div style="margin:14px 0 4px;font-size:1.05rem"><b class="${cls(p.oneWeekPct)}">${pct(p.oneWeekPct)}</b> in the last 7 days
+        <span style="color:var(--muted)">&nbsp;·&nbsp; ${p.oneMonthPct == null ? '' : pct(p.oneMonthPct) + ' in a month &nbsp;·&nbsp; '}up on ${p.upDays} of ${p.tradingDays} days &nbsp;·&nbsp; NAV ${num(p.nav, 4)} (${dmy(p.navDate)})</span></div>
+      <p style="max-width:70ch;margin:12px 0">${esc(a.rationale || '')}</p>
+      <div class="dlg-actions" style="justify-content:flex-start;gap:10px">
+        <button class="btn primary" data-advisor-buy="${p.fundId}">I invested ${rs(a.amount)}: record it</button>
+        <button class="btn" id="advisorRefresh">Recalculate</button>
+      </div>
+      <p class="hint" style="margin:12px 0 0">${a.source === 'CLAUDE' ? 'Commentary written by Claude from the numbers above.' : a.aiEnabled ? 'Claude commentary wasn’t available just now, so this text is rule-based.' : 'Commentary is rule-based. To get Claude’s commentary, set the ANTHROPIC_API_KEY environment variable and restart the app.'}</p>`
+    : `<div style="font-size:1.2rem;font-weight:600">No pick today</div>
+      <p style="max-width:70ch;margin:10px 0">${esc(a.message || '')}</p>
+      <button class="btn" id="advisorRefresh">Recalculate</button>`;
+  const rows = ranking.map(r => `<tr style="${p && r.fundId === p.fundId ? 'font-weight:600' : ''}${r.note ? ';color:var(--muted)' : ''}">
+      <td class="name">${esc(r.schemeName)}<span class="meta">${esc(r.category || '')}${r.note ? ' · ' + esc(r.note) : ''}</span></td>
+      <td class="${cls(r.oneWeekPct)}">${r.oneWeekPct == null ? '–' : pct(r.oneWeekPct)}</td>
+      <td class="${cls(r.oneMonthPct)}">${r.oneMonthPct == null ? '–' : pct(r.oneMonthPct)}</td>
+      <td>${r.tradingDays ? r.upDays + '/' + r.tradingDays : '–'}</td><td>${num(r.weightPct, 1)}%</td></tr>`).join('');
+  $('#main').innerHTML = `
+    <section class="group">
+      <div class="ghead"><h2>Where could ${rs(a.amount)} go today?</h2>
+        <div class="gnums"><span>${new Date(a.date).toLocaleDateString('en-IN', {weekday: 'long', day: 'numeric', month: 'long'})}</span></div></div>
+      <div style="padding:18px 16px">${head}</div>
+    </section>
+    <section class="group">
+      <div class="ghead"><h2>One-week NAV ranking</h2><div class="gnums"><span>${compared} funds compared</span></div></div>
+      <div class="scroll"><table><thead><tr>${sortHeader('fund', 'Fund')}${sortHeader('week', '1 week')}${sortHeader('month', '1 month')}${sortHeader('days', 'Up days')}${sortHeader('share', 'Share of portfolio')}</tr></thead>
+        <tbody>${rows || '<tr><td colspan="5" class="empty">Nothing to compare yet.</td></tr>'}</tbody></table></div>
+    </section>
+    <section class="group">
+      <div class="ghead"><h2>Past picks</h2><div class="gnums"><span>How each pick has done since it was suggested</span></div></div>
+      ${hist.length ? `<div class="scroll"><table><thead><tr><th>Date</th><th>Fund</th><th>Week before</th><th>NAV then</th><th>NAV now</th><th>Since pick</th></tr></thead><tbody>
+        ${hist.map(h => `<tr><td>${dmy(h.date)}</td><td class="name">${esc(h.schemeName)}</td><td class="${cls(h.oneWeekPct)}">${pct(h.oneWeekPct)}</td>
+          <td>${num(h.navAtPick, 2)}</td><td>${num(h.navNow, 2)}</td><td class="${cls(h.sincePct)}">${h.sincePct == null ? '–' : pct(h.sincePct)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<div class="empty">Picks you get each day will be listed here, so you can see whether last week’s winners kept winning.</div>'}
+    </section>
+    <p class="hint" style="max-width:80ch">This is a simple screen on past NAV moves, not investment advice. A fund that rose last week is not more likely to rise next week, and chasing recent winners can backfire. Picks only consider funds already in your portfolio that are linked to a scheme code.</p>`;
+}
+
+// ------------------------------------------------------------ 50-day strategy view
+const dateKey = day => `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+function strategyDates() {
+  const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
+  const dates = [];
+  while (dates.length < 50) {
+    if (cursor.getDay() !== 0 && cursor.getDay() !== 6) dates.push(dateKey(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+async function loadStrategy() {
+  $('#main').innerHTML = '<div class="empty">Loading your 50-day strategy view…</div>';
+  try {
+    if (!state.data) state.data = await api('/portfolio?groupBy=' + state.groupBy);
+    const dates = strategyDates();
+    const [advisor, history, summary] = await Promise.all([
+      api('/advisor/today'), api('/advisor/history'),
+      api(`/strategy/summary?from=${dates[0]}&to=${dates[49]}`)
+    ]);
+    state.advisor = advisor;
+    state.strategyHistory = history || [];
+    state.strategySummary = summary;
+    if (state.view === 'strategy') renderStrategy();
+  } catch (err) {
+    if (state.view === 'strategy') $('#main').innerHTML = `<div class="empty">Couldn’t load the strategy view: ${esc(err.message)}</div>`;
+  }
+}
+function renderStrategy() {
+  if (!state.data) return;
+  const funds = state.data.groups.flatMap(g => g.funds);
+  const historyByDate = new Map((state.strategyHistory || []).map(h => [h.date, h]));
+  if (state.advisor && state.advisor.pick) historyByDate.set(state.advisor.date, {
+    date: state.advisor.date, fundId: state.advisor.pick.fundId, schemeName: state.advisor.pick.schemeName,
+    oneWeekPct: state.advisor.pick.oneWeekPct
+  });
+
+  const purchasesByDate = new Map();
+  funds.forEach(f => f.purchases.forEach(p => {
+    if (!purchasesByDate.has(p.date)) purchasesByDate.set(p.date, []);
+    purchasesByDate.get(p.date).push({fundId: f.id, schemeName: f.schemeName, plan: f.plan, amount: p.amount});
+  }));
+  purchasesByDate.forEach(items => items.sort((x, y) => x.schemeName.localeCompare(y.schemeName)));
+
+  const dates = strategyDates();
+  const previousDay = new Date(dates[0] + 'T00:00:00'); previousDay.setDate(previousDay.getDate() - 1);
+  while (previousDay.getDay() === 0 || previousDay.getDay() === 6) previousDay.setDate(previousDay.getDate() - 1);
+  const previousDateKey = dateKey(previousDay);
+  const effectiveIds = date => {
+    const bought = purchasesByDate.get(date) || [];
+    if (bought.length) return [...new Set(bought.map(x => x.fundId))].sort((a, b) => a - b);
+    const pick = historyByDate.get(date);
+    return pick && pick.fundId != null ? [pick.fundId] : [];
+  };
+  let priorIds = effectiveIds(previousDateKey);
+  const dayRows = dates.map(date => {
+    const bought = purchasesByDate.get(date) || [];
+    const pick = historyByDate.get(date);
+    const ids = effectiveIds(date);
+    const changed = ids.length && priorIds.length && JSON.stringify(ids) !== JSON.stringify(priorIds);
+    priorIds = ids;
+    const invested = bought.reduce((sum, item) => sum + item.amount, 0);
+    const boughtIds = new Set(bought.map(item => item.fundId));
+    const investmentText = bought.length
+      ? bought.map(item => `${esc(item.schemeName)} <span class="tag">${esc(item.plan.toLowerCase())}</span> <span class="meta" style="margin:0">${rs(item.amount)}</span>`).join('<br>')
+      : '<span class="meta" style="margin:0">No purchase recorded</span>';
+    const pickText = pick
+      ? `${esc(pick.schemeName)}<span class="meta" style="margin:0">${boughtIds.has(pick.fundId) ? 'Investment recorded' : 'Pick only'}${pick.oneWeekPct == null ? '' : ' · ' + pct(pick.oneWeekPct) + ' over 7 days'}</span>`
+      : '<span class="meta" style="margin:0">No pick recorded</span>';
+    const dateObj = new Date(date + 'T00:00:00');
+    return `<tr class="${changed ? 'fund-changed' : ''}"><td>${dateObj.toLocaleDateString('en-IN', {weekday:'short', day:'numeric', month:'short'})}</td>
+      <td class="name">${investmentText}</td><td class="name">${pickText}</td><td>${bought.length ? rs(invested) : '–'}</td></tr>`;
+  }).join('');
+
+  const investedFunds = (state.strategySummary?.funds || []).map(f => ({
+    ...f, periodInvested: f.invested, periodGain: f.gain
+  }));
+  const plotLeft = 300, plotWidth = 480, chartWidth = 1060;
+  const knownGains = investedFunds.map(f => f.periodGain).filter(g => g != null);
+  const minValue = Math.min(0, ...knownGains);
+  const maxValue = Math.max(1, ...investedFunds.map(f => f.periodInvested), ...knownGains);
+  const range = maxValue - minValue || 1;
+  const xFor = value => plotLeft + (value - minValue) / range * plotWidth;
+  const zeroX = xFor(0), chartHeight = Math.max(110, 48 * investedFunds.length + 58);
+  const bars = investedFunds.map((f, i) => {
+    const y = 42 + i * 48, investX = zeroX, investW = Math.max(1, f.periodInvested / range * plotWidth);
+    const gain = f.periodGain ?? 0, gainW = Math.abs(gain) / range * plotWidth, gainX = gain < 0 ? zeroX - gainW : zeroX;
+    const gainColor = gain < 0 ? '#B42318' : '#15775A';
+    const label = `${f.schemeName} (${f.plan.toLowerCase()})`;
+    return `<g><text x="10" y="${y + 13}" font-size="12" fill="#13233A">${esc(label.length > 34 ? label.slice(0, 32) + '…' : label)}</text>
+      <rect x="${investX}" y="${y}" width="${investW}" height="13" rx="2" fill="#1F4E8C"><title>${esc(f.schemeName)} invested during the strategy period: ${rs(f.periodInvested)}</title></rect>
+      <text x="790" y="${y + 11}" font-size="11" fill="#13233A">${rs(f.periodInvested)}</text>
+      ${f.periodGain == null ? `<text x="910" y="${y + 31}" font-size="11" fill="#5E6B7C">NAV unavailable</text>` : `<rect x="${gainX}" y="${y + 20}" width="${Math.max(1, gainW)}" height="13" rx="2" fill="${gainColor}"><title>${esc(f.schemeName)} strategy-period gain/loss: ${signed(f.periodGain)}</title></rect><text x="910" y="${y + 31}" font-size="11" fill="${gainColor}">${signed(f.periodGain)}</text>`}</g>`;
+  }).join('');
+  const chart = investedFunds.length ? `<div class="strategy-chart"><svg viewBox="0 0 ${chartWidth} ${chartHeight}" role="img" aria-label="Invested amount and current gain or loss for each fund">
+      <text x="790" y="18" font-size="11" fill="#5E6B7C">Invested</text><text x="910" y="18" font-size="11" fill="#5E6B7C">Gain/loss</text>
+      <line x1="${zeroX}" y1="25" x2="${zeroX}" y2="${chartHeight - 14}" stroke="#9AA6B2" stroke-width="1" />${bars}</svg></div>`
+    : '<div class="empty">No recorded investments to chart yet.</div>';
+  $('#main').innerHTML = `
+    <section class="group"><div class="ghead"><h2>Investment activity · next 50 weekdays</h2>
+      <div class="gnums"><span>${new Date(dates[0] + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric',month:'short'})} – ${new Date(dates[49] + 'T00:00:00').toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})}</span></div></div>
+      <p class="hint" style="margin:12px 16px">Weekends are skipped. Recorded purchases show what you invested and when. The daily pick is shown separately; future dates fill in as each day’s pick is generated. Yellow rows mark a different fund than the previous weekday.</p>
+      <div class="scroll"><table class="strategy-table"><thead><tr><th>Date</th><th>Investment recorded</th><th>Daily pick</th><th>Sum invested</th></tr></thead><tbody>${dayRows}</tbody></table></div>
+    </section>
+    <section class="group"><div class="ghead"><h2>Strategy-period investment and gain/loss by fund</h2>
+      <div class="strategy-legend"><span><i class="legend-swatch" style="background:#1F4E8C"></i>Invested</span><span><i class="legend-swatch" style="background:#15775A"></i>Gain</span><span><i class="legend-swatch" style="background:#B42318"></i>Loss</span></div></div>
+      ${chart}<p class="hint" style="margin:0 16px 12px">Only purchases dated within these 50 weekdays are included. Gain/loss is calculated on those units using each fund’s latest NAV and updates when NAVs refresh.</p>
+    </section>`;
+}
+
+// ------------------------------------------------------------ wiring
+$('#main').addEventListener('click', async e => {
+  const t = e.target;
+  const portfolioSortButton = t.closest('[data-portfolio-sort]');
+  if (portfolioSortButton) {
+    const group = portfolioSortButton.dataset.sortGroup, key = portfolioSortButton.dataset.portfolioSort;
+    const current = state.portfolioSort[group];
+    state.portfolioSort[group] = {key, direction: current && current.key === key && current.direction === 'ascending' ? 'descending' : 'ascending'};
+    renderPortfolio();
+    return;
+  }
+  const collapseButton = t.closest('[data-collapse-group]');
+  if (collapseButton) {
+    const group = collapseButton.dataset.collapseGroup;
+    state.portfolioCollapsed.has(group) ? state.portfolioCollapsed.delete(group) : state.portfolioCollapsed.add(group);
+    renderPortfolio();
+    return;
+  }
+  const sortButton = t.closest('[data-advisor-sort]');
+  if (sortButton) {
+    const key = sortButton.dataset.advisorSort;
+    state.advisorSort = {key, direction: state.advisorSort.key === key && state.advisorSort.direction === 'ascending' ? 'descending' : 'ascending'};
+    renderAdvisor();
+    return;
+  }
+  const rb = t.closest('[data-refresh-f]');
+  if (rb) {
+    e.stopPropagation();
+    const label = rb.textContent; rb.disabled = true; rb.textContent = '…';
+    try { const r = await api('/funds/' + rb.dataset.refreshF + '/refresh-nav', {method: 'POST'}); toast(r.message); await Promise.all([loadPortfolio(), loadFunds()]); }
+    catch (err) { toast(err.message); rb.disabled = false; rb.textContent = label; }
+    return;
+  }
+  if (t.closest('[data-edit-p]')) {
+    const fid = +t.dataset.fund, pid = +t.dataset.editP;
+    const f = state.data.groups.flatMap(g => g.funds).find(x => x.id === fid);
+    return openPurchase(fid, f.purchases.find(p => p.id === pid));
+  }
+  if (t.closest('[data-del-p]')) {
+    if (!confirm('Delete this purchase?')) return;
+    try { await api('/purchases/' + t.dataset.delP, {method: 'DELETE'}); toast('Purchase deleted.'); await Promise.all([loadPortfolio(), loadFunds()]); } catch (err) { toast(err.message); }
+    return;
+  }
+  if (t.closest('[data-add-for]')) return openPurchase(+t.dataset.addFor);
+  const ab = t.closest('[data-advisor-buy]');
+  if (ab) return openPurchase(+ab.dataset.advisorBuy, null, {amount: state.advisor.amount});
+  if (t.id === 'advisorRefresh') return loadAdvisor(true);
+  if (t.closest('[data-edit-f]')) return openFund(+t.dataset.editF);
+  if (t.id === 'newFundBtn') return openFund(null);
+  const tr = t.closest('tr.fund');
+  if (tr) { const id = +tr.dataset.fund; state.open.has(id) ? state.open.delete(id) : state.open.add(id); renderPortfolio(); }
+});
+$('#notice').addEventListener('click', e => { if (e.target.dataset.goto) setView(e.target.dataset.goto); });
+$('#groupSeg').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  state.groupBy = b.dataset.g;
+  document.querySelectorAll('#groupSeg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  loadPortfolio();
+});
+function setView(v) {
+  state.view = v;
+  ['portfolio', 'funds', 'advisor', 'strategy'].forEach(n => $('#tab-' + n).setAttribute('aria-selected', n === v));
+  $('#groupSeg').style.visibility = v === 'portfolio' ? 'visible' : 'hidden';
+  if (v === 'portfolio') renderPortfolio();
+  else if (v === 'funds') loadFunds();
+  else if (v === 'advisor') loadAdvisor(false);
+  else loadStrategy();
+}
+$('#tab-portfolio').onclick = () => setView('portfolio');
+$('#tab-funds').onclick = () => setView('funds');
+$('#tab-advisor').onclick = () => setView('advisor');
+$('#tab-strategy').onclick = () => setView('strategy');
+$('#addBtn').onclick = () => openPurchase();
+$('#refreshBtn').onclick = async () => {
+  const b = $('#refreshBtn'); b.disabled = true; b.textContent = 'Refreshing…';
+  try { const r = await api('/nav/refresh', {method: 'POST'}); toast(r.message); await Promise.all([loadPortfolio(), loadFunds()]); }
+  catch (err) { toast(err.message); }
+  b.disabled = false; b.textContent = 'Refresh NAV';
+};
+$('#clearDataBtn').onclick = async () => {
+  if (!confirm('Permanently delete all purchases, funds, and saved daily picks for BOTH rajesh and cams? Login accounts will remain. This cannot be undone.')) return;
+  const b = $('#clearDataBtn'); b.disabled = true; b.textContent = 'Clearing…';
+  try {
+    const r = await api('/data', {method: 'DELETE'});
+    toast(`Cleared ${r.purchasesDeleted} purchases, ${r.fundsDeleted} funds, and ${r.dailyPicksDeleted} saved daily picks.`);
+    await Promise.all([loadPortfolio(), loadFunds()]);
+  } catch (err) { toast(err.message); }
+  finally { b.disabled = false; b.textContent = 'Clear all data'; }
+};
+
+let casTransactions = [];
+function casStatus(message) { $('#casStatus').textContent = message; $('#casStatus').hidden = !message; }
+function showLogin() { $('#appRoot').hidden = true; $('#loginScreen').hidden = false; }
+function showApp(username) {
+  $('#loginScreen').hidden = true; $('#appRoot').hidden = false; $('#signedInAs').textContent = 'Signed in: ' + username;
+  loadPortfolio().then(loadFunds).catch(err => { $('#main').innerHTML = `<div class="empty">Couldn't load your portfolio: ${esc(err.message)}</div>`; });
+}
+$('#loginForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('#loginError').hidden = true;
+  const submit = $('#loginForm button[type="submit"]'); submit.disabled = true; submit.textContent = 'Signing in…';
+  try {
+    const res = await fetch('/api/auth/login', {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username:$('#loginUsername').value.trim().toLowerCase(), password:$('#loginPassword').value.trim()})});
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.error || body.detail || `Sign-in failed (HTTP ${res.status}).`);
+    showApp(body.username);
+  } catch (err) { $('#loginError').textContent = err.message || 'Could not reach the app. Open it at http://localhost:8080 and try again.'; $('#loginError').hidden = false; }
+  finally { submit.disabled = false; submit.textContent = 'Log in'; }
+});
+$('#logoutBtn').onclick = async () => { try { await api('/auth/logout', {method:'POST'}); } catch (_) {} location.reload(); };
+$('#casBtn').onclick = () => { casTransactions = []; $('#casPreview').hidden = true; $('#importCasBtn').disabled = true; casStatus(''); $('#casDlg').showModal(); };
+$('#parseCasBtn').onclick = async () => {
+  const file = $('#casFile').files[0]; if (!file) return casStatus('Choose a CAS PDF first.');
+  const button = $('#parseCasBtn'); button.disabled = true; button.textContent = 'Reading CAS…'; casStatus('Decrypting and extracting transactions. This may take a little while.');
+  try {
+    const data = new FormData(); data.append('file', file); data.append('password', $('#casPassword').value);
+    const res = await fetch('/api/cas/parse', {method:'POST', body:data});
+    const body = await res.json().catch(() => ({})); if (!res.ok) throw new Error(body.error || body.message || 'Could not read CAS.');
+    casTransactions = body.transactions || [];
+    if (!casTransactions.length) { $('#casPreview').hidden = true; $('#importCasBtn').disabled = true; return casStatus('No completed purchase rows were found. Upload a detailed CAS and check that it includes transaction details.'); }
+    $('#casPreview').innerHTML = `<table><thead><tr><th style="text-align:left">Import</th><th style="text-align:left">Fund house</th><th style="text-align:left">Fund name</th><th>Date</th><th>Amount</th><th>NAV</th><th>Units</th></tr></thead><tbody>${casTransactions.map((x,i)=>`<tr><td><input type="checkbox" data-cas-row="${i}" checked aria-label="Import row ${i+1}"></td><td style="text-align:left;white-space:normal">${esc(x.fundHouse || '')}</td><td style="text-align:left;white-space:normal">${esc(x.schemeName)}<small class="meta">${esc(x.transactionType || 'Purchase')}</small></td><td>${esc(x.date || '')}</td><td>${esc(x.amount ?? '')}</td><td>${esc(x.nav ?? '')}</td><td>${esc(x.units ?? '')}</td></tr>`).join('')}</tbody></table>`;
+    $('#casPreview').hidden = false; $('#importCasBtn').disabled = false; casStatus(body.message || 'Review the rows, deselect anything incorrect, then import.');
+  } catch (err) { casTransactions = []; $('#casPreview').hidden = true; $('#importCasBtn').disabled = true; casStatus(err.message); }
+  finally { button.disabled = false; button.textContent = 'Read and preview transactions'; }
+};
+$('#importCasBtn').onclick = async () => {
+  const selected = [...document.querySelectorAll('[data-cas-row]:checked')].map(el => casTransactions[+el.dataset.casRow]);
+  if (!selected.length) return casStatus('Select at least one transaction row.');
+  const button = $('#importCasBtn'); button.disabled = true; button.textContent = 'Importing…';
+  try {
+    const r = await api('/cas/import', {method:'POST', body:JSON.stringify({transactions:selected})});
+    const mappingSummary = r.navRefreshOk
+      ? `${r.linkedFunds} of ${r.linkedFunds + r.unmappedFunds} funds linked to AMFI; ${r.unmappedFunds} still need a scheme code.`
+      : `AMFI refresh was unavailable: ${r.navRefreshMessage}`;
+    casStatus(`Imported ${r.imported} transaction(s); skipped ${r.skipped} duplicate or non-purchase row(s). ${mappingSummary}`);
+    await Promise.all([loadPortfolio(), loadFunds()]); setTimeout(() => $('#casDlg').close(), 1600);
+  } catch (err) { casStatus(err.message); }
+  finally { button.disabled = false; button.textContent = 'Import selected rows'; }
+};
+
+fetch('/api/auth/session', {credentials:'same-origin'}).then(async res => {
+  if (!res.ok) throw new Error('Not logged in'); return res.json();
+}).then(session => showApp(session.username)).catch(showLogin);
+// The server refreshes NAVs on startup; refresh the view shortly after login and every five minutes.
+setTimeout(() => { if (!$('#appRoot').hidden) loadPortfolio().then(loadFunds); }, 15000);
+setInterval(() => { if (!$('#appRoot').hidden) loadPortfolio().then(loadFunds); }, 300000);
+</script>
+</body>
+</html>

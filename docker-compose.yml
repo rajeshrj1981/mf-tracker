@@ -1,0 +1,15 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mftracker-copy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mftracker_copy
+      TZ: Asia/Kolkata
+    ports:
+      - "3307:3306"
+    volumes:
+      - mftracker-copy-data:/var/lib/mysql
+volumes:
+  mftracker-copy-data:

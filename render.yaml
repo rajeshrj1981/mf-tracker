@@ -1,0 +1,40 @@
+databases:
+  - name: mf-tracker-db
+    databaseName: mftracker
+    user: mftracker
+    plan: 0.1c-256mb
+
+services:
+  - type: web
+    name: mf-tracker
+    runtime: docker
+    plan: 0.5c-512mb
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: render
+      - key: DB_HOST
+        fromDatabase:
+          name: mf-tracker-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: mf-tracker-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: mf-tracker-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: mf-tracker-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: mf-tracker-db
+          property: password
+      - key: RAJESH_PASSWORD
+        sync: false
+      - key: CAMS_PASSWORD
+        sync: false

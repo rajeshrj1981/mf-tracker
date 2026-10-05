@@ -1,0 +1,12 @@
+.git
+.gitignore
+.idea
+.vscode
+target
+*.log
+*.pdf
+*.xlsx
+*.xls
+*.csv
+.env
+docker-compose.yml
